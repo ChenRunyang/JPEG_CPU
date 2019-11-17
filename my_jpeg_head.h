@@ -42,15 +42,14 @@ typedef struct H_node
 {
     int value;
     char weight;
-}Huffman_node;
+} Huffman_node;
 
 typedef struct Huf_tree
 {
     int node_num;
     unsigned char node_info;
     std::vector<Huffman_node> data;
-}
-
+};
 
 extern void init_header();
 extern void wrong(const char *name);

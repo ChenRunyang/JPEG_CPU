@@ -44,9 +44,9 @@ void parse_SOF0(unsigned char *global_ptr)
     }
 }
 
-void parse_DHT(unsigned char * global_ptr,int length)
+void parse_DHT(unsigned char *global_ptr, int length)
 {
-    ;
+    extern unsigned char counts[16];
 }
 void init_header()
 {
@@ -88,7 +88,7 @@ void init_header()
                 cout << "find DHT" << endl;
                 seg_length = (*(global_ptr) << 8) + *(global_ptr + 1);
                 global_ptr += 2;
-                parse_DHT(global_ptr,seg_length);
+                parse_DHT(global_ptr, seg_length);
                 break;
             case SOS:
                 cout << "end" << endl;

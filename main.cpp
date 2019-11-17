@@ -20,6 +20,9 @@ int zigzag_table[64] =
         21, 34, 37, 47, 50, 56, 59, 61,
         35, 36, 48, 49, 57, 58, 62, 63};
 
+Huffman_node DC[2];
+Huffman_node AC[4];
+
 int main(int argc, char **argv)
 {
     int sz;

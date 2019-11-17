@@ -47,6 +47,8 @@ void parse_SOF0(unsigned char *global_ptr)
 void parse_DHT(unsigned char *global_ptr, int length)
 {
     extern unsigned char counts[16];
+    extern Huffman_tree DC[2];
+    extern Huffman_tree AC[6];
 }
 void init_header()
 {

@@ -7,7 +7,6 @@ unsigned char *global_ptr;
 cl_char4 *rgb;
 DQTable DQ_TABLE[4]; //最多储存四张DQT表
 IMGINFO IMG;
-unsigned char counts[16];
 
 int zigzag_table[64] =
     {
@@ -20,8 +19,7 @@ int zigzag_table[64] =
         21, 34, 37, 47, 50, 56, 59, 61,
         35, 36, 48, 49, 57, 58, 62, 63};
 
-Huffman_node DC[2];
-Huffman_node AC[4];
+Huffman_node Huffman_table[8];
 
 int main(int argc, char **argv)
 {

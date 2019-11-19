@@ -4,7 +4,7 @@ SRCS := $(wildcard ./src/*.cpp ./*.cpp)
 
 OBJS := $(patsubst %cpp,%o,$(SRCS))
 
-CFLG = -g -Wall -I/usr/local/Cellar/opencv@3/3.4.5_6/include -Iinc -I./ -std=c++11
+CFLG = -g -Wall -std=c++11
 
 LDFG = -Wl -framework OpenCL
 

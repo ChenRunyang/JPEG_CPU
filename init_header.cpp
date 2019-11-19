@@ -40,15 +40,91 @@ void parse_SOF0(unsigned char *global_ptr)
         tmp.vet_sample = *(global_ptr + 7 + i * 3) & 0x0f;
         tmp.DQT_num = *(global_ptr + 8 + i * 3);
         IMG.com_info.push_back(tmp);
-        cout << tmp.num + 0 << tmp.hor_sample + 0 << tmp.vet_sample + 0 << tmp.DQT_num + 0 << " ";
+        //cout << tmp.num + 0 << tmp.hor_sample + 0 << tmp.vet_sample + 0 << tmp.DQT_num + 0 << " ";
     }
 }
 
 void parse_DHT(unsigned char *global_ptr, int length)
 {
-    extern unsigned char counts[16];
-    extern Huffman_tree DC[2];
-    extern Huffman_tree AC[6];
+    unsigned char counts[16];
+    extern Huffman_tree Huffman_table[8];
+    unsigned int count_num = 0;
+    length -= 2;
+    unsigned int code_value = 0;
+    bool shift = false;
+    bool first = true; //第一个节点没有1
+    Huffman_node tmp;
+    while (length) //读入哈夫曼表的数据
+    {
+        cout << "length:" << length << endl;
+        cout << *(global_ptr) + 0 << endl;
+        unsigned char type = ((*(global_ptr)) & 0xf0) >> 4;
+        unsigned char table_flag = (*(global_ptr)&0x0f);
+        unsigned char table_num = (type << 1) + table_flag; //前两个表是DC表，后面六个表是AC表
+        Huffman_table[table_num].node_num = table_flag;
+        Huffman_table[table_num].node_info = type;
+        Huffman_table[table_num].effect = true;
+        count_num = 0; //统计各个长度的节点总数
+        code_value = 0;
+        //cout << table_num + 0;
+        if (table_num > 7)
+        {
+            wrong("There are too many tables");
+        }
+        for (auto x : counts)
+        {
+            x = 0; //counts表至为0
+        }
+        for (int codelen = 1; codelen < 17; codelen++)
+        {
+            counts[codelen - 1] = *(global_ptr + codelen);
+            count_num += *(global_ptr + codelen);
+        }
+        for (int i = 0; i < 16; i++)
+        {
+            cout << counts[i] + 0 << " ";
+        }
+        global_ptr += 17;
+        first = true;
+        for (int i = 0; i < 16; i++)
+        {
+            shift = false;
+            while (counts[i]) //计算哈夫曼节点的value值
+            {
+                tmp.length = i + 1;
+                tmp.weight = *(global_ptr);
+                code_value += 1;
+                if (first)
+                {
+                    tmp.value--;
+                    code_value--;
+                    first = false;
+                }
+                if (!shift)
+                {
+                    code_value = code_value << 1;
+                    shift = true;
+                }
+                tmp.value = code_value;
+                counts[i]--;
+                global_ptr++;
+                Huffman_table[table_num].data.push_back(tmp);
+            }
+        }
+        length -= (count_num + 17); //info:1,data:count_num,length:16
+    }
+    /* for (int i = 0; i < 8; i++)
+    {
+        if (Huffman_table[i].effect)
+        {
+            for (auto x : Huffman_table[i].data)
+            {
+                cout << "node value is" << x.value << "weight is" << x.weight + 0 << "length is" << x.length + 0 << endl;
+            }
+            cout << endl;
+        }
+    }
+    */
 }
 void init_header()
 {

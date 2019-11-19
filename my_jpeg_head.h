@@ -41,14 +41,19 @@ typedef struct image
 typedef struct H_node
 {
     int value;
-    char weight;
+    unsigned char weight;
+    unsigned char length;
+    H_node() : value(0), weight(0), length(0){};
 } Huffman_node;
 
 typedef struct H_tree
 {
-    int node_num;
+    bool effect;
+    unsigned char node_num;
     unsigned char node_info;
     std::vector<Huffman_node> data;
+
+    H_tree() : effect(false), node_num(0), node_info(0){};
 } Huffman_tree;
 
 extern void init_header();

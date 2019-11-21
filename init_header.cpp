@@ -56,8 +56,8 @@ void parse_DHT(unsigned char *global_ptr, int length)
     Huffman_node tmp;
     while (length) //读入哈夫曼表的数据
     {
-        cout << "length:" << length << endl;
-        cout << *(global_ptr) + 0 << endl;
+        // cout << "length:" << length << endl;
+        // cout << *(global_ptr) + 0 << endl;
         unsigned char type = ((*(global_ptr)) & 0xf0) >> 4;
         unsigned char table_flag = (*(global_ptr)&0x0f);
         unsigned char table_num = (type << 1) + table_flag; //前两个表是DC表，后面六个表是AC表
@@ -80,10 +80,7 @@ void parse_DHT(unsigned char *global_ptr, int length)
             counts[codelen - 1] = *(global_ptr + codelen);
             count_num += *(global_ptr + codelen);
         }
-        for (int i = 0; i < 16; i++)
-        {
-            cout << counts[i] + 0 << " ";
-        }
+
         global_ptr += 17;
         first = true;
         for (int i = 0; i < 16; i++)
@@ -94,7 +91,7 @@ void parse_DHT(unsigned char *global_ptr, int length)
                 tmp.length = i + 1;
                 tmp.weight = *(global_ptr);
                 code_value += 1;
-                if (first)
+                if (first) //第一个节点为0
                 {
                     tmp.value--;
                     code_value--;
@@ -126,6 +123,26 @@ void parse_DHT(unsigned char *global_ptr, int length)
     }
     */
 }
+
+void parse_AP(unsigned char *global_ptr, int length)
+{
+    extern IDE_INFO IDE;
+    if ((IDE.Jpeg_mark = *((unsigned int *)global_ptr)) != 0x4649464a) //此处一定要注意大小端的问题，切记切记，默认小端
+    {
+        wrong("This is not a JPEG");
+    }
+    global_ptr += 6;
+    IDE.hor_reso = ((0 | ((*global_ptr))) << 4) | (*(global_ptr + 1));
+    global_ptr += 2;
+    IDE.ver_reso = ((0 | ((*global_ptr))) << 4) | (*(global_ptr + 1));
+    global_ptr += 2;
+    IDE.hor_pit = *(global_ptr);
+    global_ptr++;
+    IDE.ver_pit = *(global_ptr);
+    global_ptr++;
+    //cout << IDE.hor_reso + 0 << IDE.ver_reso + 0 << IDE.hor_pit + 0 << IDE.ver_pit + 0;
+}
+
 void init_header()
 {
     extern unsigned char *global_ptr;
@@ -140,7 +157,7 @@ void init_header()
     {
         if (*(global_ptr) == MA)
         {
-            cout << "find" << *(global_ptr + 1) + 0 << endl;
+            // cout << "find" << *(global_ptr + 1) + 0 << endl;
 
             switch (*(global_ptr + 1))
             {
@@ -163,15 +180,21 @@ void init_header()
                 break;
             case DHT:
                 global_ptr += 2;
-                cout << "find DHT" << endl;
+                //cout << "find DHT" << endl;
                 seg_length = (*(global_ptr) << 8) + *(global_ptr + 1);
                 global_ptr += 2;
                 parse_DHT(global_ptr, seg_length);
                 break;
+            case AP0:
+                global_ptr += 2;
+                seg_length = (*(global_ptr) << 8) + *(global_ptr + 1);
+                global_ptr += 2;
+                parse_AP(global_ptr, seg_length);
+                break;
             case SOS:
                 cout << "end" << endl;
                 scan_end = true;
-                global_ptr++;
+                global_ptr += 2; //指针指向SOS标示的下一个字节
                 break;
             default:
                 global_ptr++;

@@ -14,6 +14,15 @@
 #define APE 0xee
 #define SOF0 0xc0
 
+typedef struct identify
+{
+    unsigned int Jpeg_mark;
+    unsigned short ver_reso;
+    unsigned short hor_reso;
+    unsigned char ver_pit;
+    unsigned char hor_pit;
+} IDE_INFO;
+
 typedef struct dqtable
 {
     unsigned char imfo : 4;
@@ -58,5 +67,6 @@ typedef struct H_tree
 
 extern void init_header();
 extern void wrong(const char *name);
+extern void scan_data();
 
 using namespace std;

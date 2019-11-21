@@ -7,6 +7,7 @@ unsigned char *global_ptr;
 cl_char4 *rgb;
 DQTable DQ_TABLE[4]; //最多储存四张DQT表
 IMGINFO IMG;
+IDE_INFO IDE;
 
 int zigzag_table[64] =
     {
@@ -51,4 +52,5 @@ int main(int argc, char **argv)
     global_ptr = (unsigned char *)(buf);
 
     init_header();
+    scan_data();
 }

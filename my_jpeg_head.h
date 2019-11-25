@@ -13,6 +13,7 @@
 #define APC 0xec
 #define APE 0xee
 #define SOF0 0xc0
+#define END 0xd9
 
 typedef struct identify
 {

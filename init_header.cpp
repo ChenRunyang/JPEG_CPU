@@ -192,9 +192,8 @@ void init_header()
                 parse_AP(global_ptr, seg_length);
                 break;
             case SOS:
-                cout << "end" << endl;
+                //cout << "end" << endl;
                 scan_end = true;
-                global_ptr += 2; //指针指向SOS标示的下一个字节
                 break;
             default:
                 global_ptr++;

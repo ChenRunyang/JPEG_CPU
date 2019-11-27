@@ -101,16 +101,18 @@ void parse_DHT(unsigned char *global_ptr, int length)
                 {
                     code_value = code_value << 1;
                     shift = true;
+                    Huffman_table[table_num].length_min[i]=code_value;        //为了在decode过程中找到合适的length
                 }
                 tmp.value = code_value;
                 counts[i]--;
                 global_ptr++;
                 Huffman_table[table_num].data.push_back(tmp);
             }
+            Huffman_table[table_num].length_max[i]=code_value;
         }
         length -= (count_num + 17); //info:1,data:count_num,length:16
     }
-    /* for (int i = 0; i < 8; i++)
+    /*for (int i = 0; i < 8; i++)
     {
         if (Huffman_table[i].effect)
         {
@@ -119,9 +121,17 @@ void parse_DHT(unsigned char *global_ptr, int length)
                 cout << "node value is" << x.value << "weight is" << x.weight + 0 << "length is" << x.length + 0 << endl;
             }
             cout << endl;
+            for(auto y:Huffman_table[i].length_min)
+            {
+                cout<<"min valueis"<<y;
+            }
+            for(auto y:Huffman_table[i].length_max)
+            {
+                cout<<"max value is"<<y;
+            }
         }
-    }
-    */
+    }*/
+    
 }
 
 void parse_AP(unsigned char *global_ptr, int length)

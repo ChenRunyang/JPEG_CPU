@@ -26,8 +26,8 @@ typedef struct identify
 
 typedef struct dqtable
 {
-    unsigned char imfo : 4;
-    unsigned char precision : 4;
+    unsigned int imfo : 4;
+    unsigned int precision : 4;
     char data[64] = {0};
 } DQTable;
 
@@ -61,10 +61,30 @@ typedef struct H_tree
     bool effect;
     unsigned char node_num;
     unsigned char node_info;
+    unsigned int length_max[16];
+    unsigned int length_min[16];
     std::vector<Huffman_node> data;
 
     H_tree() : effect(false), node_num(0), node_info(0){};
 } Huffman_tree;
+
+typedef struct comp
+{
+    unsigned char comp_id;
+    unsigned int ac_id:4;
+    unsigned int dc_id:4;
+}COMP;
+
+typedef struct sos_header
+{
+    unsigned int seg_length;
+    unsigned char comp_num;
+    std::vector<COMP> comp_data;
+    unsigned char Ss;
+    unsigned char Se;
+    unsigned int Ah:4;
+    unsigned int Al:4;
+}SOS_Head;
 
 extern void init_header();
 extern void wrong(const char *name);

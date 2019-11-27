@@ -3,11 +3,14 @@
 #include "my_jpeg_head.h"
 #endif
 
+void init_para(unsigned char *global_ptr)
+{
+    
+}
 void scan_data()
 {
     extern unsigned char *global_ptr;
     bool scan_end = false;
-    int seg_length;
     while (!scan_end)
     {
         if (*(global_ptr) == MA)
@@ -17,10 +20,7 @@ void scan_data()
             case SOS:
                 global_ptr += 2;
                 //cout << "find SOS" << endl;
-                seg_length = (*(global_ptr) << 8) + *(global_ptr + 1);
-                //cout << seg_length << endl;
-                global_ptr += 2;
-
+                init_para(global_ptr);
                 break;
 
             case END:

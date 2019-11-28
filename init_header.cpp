@@ -101,14 +101,14 @@ void parse_DHT(unsigned char *global_ptr, int length)
                 {
                     code_value = code_value << 1;
                     shift = true;
-                    Huffman_table[table_num].length_min[i]=code_value;        //为了在decode过程中找到合适的length
+                    Huffman_table[table_num].length_min[i] = code_value; //为了在decode过程中找到合适的length
                 }
                 tmp.value = code_value;
                 counts[i]--;
                 global_ptr++;
                 Huffman_table[table_num].data.push_back(tmp);
             }
-            Huffman_table[table_num].length_max[i]=code_value;
+            Huffman_table[table_num].length_max[i] = code_value;
         }
         length -= (count_num + 17); //info:1,data:count_num,length:16
     }
@@ -131,7 +131,6 @@ void parse_DHT(unsigned char *global_ptr, int length)
             }
         }
     }*/
-    
 }
 
 void parse_AP(unsigned char *global_ptr, int length)

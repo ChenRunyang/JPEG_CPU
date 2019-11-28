@@ -64,16 +64,15 @@ typedef struct H_tree
     unsigned int length_max[16];
     unsigned int length_min[16];
     std::vector<Huffman_node> data;
-
     H_tree() : effect(false), node_num(0), node_info(0){};
 } Huffman_tree;
 
 typedef struct comp
 {
     unsigned char comp_id;
-    unsigned int ac_id:4;
-    unsigned int dc_id:4;
-}COMP;
+    unsigned int ac_id : 4;
+    unsigned int dc_id : 4;
+} COMP;
 
 typedef struct sos_header
 {
@@ -82,9 +81,9 @@ typedef struct sos_header
     std::vector<COMP> comp_data;
     unsigned char Ss;
     unsigned char Se;
-    unsigned int Ah:4;
-    unsigned int Al:4;
-}SOS_Head;
+    unsigned int Ah : 4;
+    unsigned int Al : 4;
+} SOS_Head;
 
 extern void init_header();
 extern void wrong(const char *name);

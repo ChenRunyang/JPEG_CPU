@@ -3,6 +3,10 @@
 #include "my_jpeg_head.h"
 #endif
 
+int divceil(unsigned short a, unsigned char b)
+{
+    return (a + b - 1) / b; //防止无法整除的情况
+}
 void init_para(SOS_Head &para)
 {
 
@@ -51,10 +55,9 @@ void analysis_data(unsigned char *global_ptr, SOS_Head &para)
     extern Huffman_tree Huffman_table[8]; //前两个表是DC表，后面6个表是AC表
     extern IMGINFO IMG;                   //检测有几个component
     bool analysis_end = false;
-    while (!analysis_end)
-    {
-        ;
-    }
+    bool is_interleaved;
+    int MCU_rows = divceil(IMG.img_height, IMG.max_hor_sample * 8); //检测纵向行数
+    int MCU_cols = divceil(IMG.img_width, IMG.max_vet_sample * 8);  //检测横向列数
 }
 void scan_data()
 {

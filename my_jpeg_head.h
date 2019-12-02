@@ -15,7 +15,7 @@
 #define SOF0 0xc0
 #define END 0xd9
 
-typedef struct identify
+typedef struct identify //没什么用
 {
     unsigned int Jpeg_mark;
     unsigned short ver_reso;
@@ -42,9 +42,11 @@ typedef struct component_info
 typedef struct image
 {
     unsigned char bitnum;
-    short img_height;
-    short img_width;
-    char component_num;
+    unsigned short img_height;
+    unsigned short img_width;
+    unsigned char component_num;
+    unsigned char max_hor_sample = 0;
+    unsigned char max_vet_sample = 0;
     std::vector<COM> com_info;
 } IMGINFO;
 

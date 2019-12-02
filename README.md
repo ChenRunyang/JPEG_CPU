@@ -1,1 +1,1 @@
-这是一个使用OpenCL对JPEG图像进行GPU加速的demo，
+这是一个使用OpenCL对JPEG图像进行GPU加速的demo

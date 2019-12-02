@@ -39,7 +39,10 @@ void parse_SOF0(unsigned char *global_ptr)
         tmp.hor_sample = *(global_ptr + 7 + i * 3) & 0xf0;
         tmp.vet_sample = *(global_ptr + 7 + i * 3) & 0x0f;
         tmp.DQT_num = *(global_ptr + 8 + i * 3);
+        IMG.max_hor_sample = max(IMG.max_hor_sample, tmp.hor_sample);
+        IMG.max_vet_sample = max(IMG.max_vet_sample, tmp.vet_sample);
         IMG.com_info.push_back(tmp);
+
         //cout << tmp.num + 0 << tmp.hor_sample + 0 << tmp.vet_sample + 0 << tmp.DQT_num + 0 << " ";
     }
 }

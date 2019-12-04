@@ -66,7 +66,7 @@ typedef struct H_tree
     unsigned int length_max[16];
     unsigned int length_min[16];
     std::vector<Huffman_node> data[16];
-    H_tree() : effect(false), node_num(0), node_info(0){};
+    H_tree() : effect(false), node_num(0), node_info(0) {}
 } Huffman_tree;
 
 typedef struct comp

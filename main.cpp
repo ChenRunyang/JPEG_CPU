@@ -39,7 +39,6 @@ int main(int argc, char **argv)
     fseek(input_file, 0, SEEK_END);
     sz = (int)ftell(input_file);
     buf = (unsigned char *)malloc(sz);
-    cout << sz << " ";
     if (!buf)
     {
         wrong("Not enough mem");

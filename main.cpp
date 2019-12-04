@@ -49,7 +49,6 @@ int main(int argc, char **argv)
     fclose(input_file);
 
     global_ptr = (unsigned char *)(buf);
-
     init_header();
     scan_data();
 }

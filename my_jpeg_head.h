@@ -45,17 +45,17 @@ typedef struct image
     unsigned short img_height;
     unsigned short img_width;
     unsigned char component_num;
-    unsigned char max_hor_sample = 0;
-    unsigned char max_vet_sample = 0;
+    unsigned char max_hor_sample;
+    unsigned char max_vet_sample;
     std::vector<COM> com_info;
+    image() : max_hor_sample(0), max_vet_sample(0) {}
 } IMGINFO;
 
 typedef struct H_node
 {
     int value;
     unsigned char weight;
-    unsigned char length;
-    H_node() : value(0), weight(0), length(0){};
+    H_node() : value(0), weight(0){};
 } Huffman_node;
 
 typedef struct H_tree
@@ -65,7 +65,7 @@ typedef struct H_tree
     unsigned char node_info;
     unsigned int length_max[16];
     unsigned int length_min[16];
-    std::vector<Huffman_node> data;
+    std::vector<Huffman_node> data[16];
     H_tree() : effect(false), node_num(0), node_info(0){};
 } Huffman_tree;
 
@@ -86,6 +86,12 @@ typedef struct sos_header
     unsigned int Ah : 4;
     unsigned int Al : 4;
 } SOS_Head;
+
+typedef struct huffmannode
+{
+    unsigned int value;
+    unsigned int distance;
+} Huffmandata;
 
 extern void init_header();
 extern void wrong(const char *name);

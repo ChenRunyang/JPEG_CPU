@@ -36,7 +36,7 @@ void parse_SOF0(unsigned char *global_ptr)
     for (int i = 0; i < IMG.component_num; i++)
     {
         tmp.num = *(global_ptr + 6 + i * 3);
-        tmp.hor_sample = *(global_ptr + 7 + i * 3) & 0xf0;
+        tmp.hor_sample = (*(global_ptr + 7 + i * 3) & 0xf0) >> 4; //一定要注意移位4，血的教训
         tmp.vet_sample = *(global_ptr + 7 + i * 3) & 0x0f;
         tmp.DQT_num = *(global_ptr + 8 + i * 3);
         IMG.max_hor_sample = max(IMG.max_hor_sample, tmp.hor_sample);
@@ -91,7 +91,6 @@ void parse_DHT(unsigned char *global_ptr, int length)
             shift = false;
             while (counts[i]) //计算哈夫曼节点的value值
             {
-                tmp.length = i + 1;
                 tmp.weight = *(global_ptr);
                 code_value += 1;
                 if (first) //第一个节点为0
@@ -109,7 +108,7 @@ void parse_DHT(unsigned char *global_ptr, int length)
                 tmp.value = code_value;
                 counts[i]--;
                 global_ptr++;
-                Huffman_table[table_num].data.push_back(tmp);
+                Huffman_table[table_num].data[i].push_back(tmp);
             }
             Huffman_table[table_num].length_max[i] = code_value;
         }

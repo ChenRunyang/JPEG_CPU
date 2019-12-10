@@ -35,7 +35,7 @@ void analysis_para(SOS_Head &para)
         tmp_comp.comp_id = *global_ptr;
         global_ptr++;
         //cout << "global is" << *global_ptr + 0;
-        tmp_comp.ac_id = (((*(global_ptr)) & 0xf0) >> 4);
+        tmp_comp.ac_id = ((((*(global_ptr)) & 0xf0) >> 4) + 2); //前两个表是DC表
         tmp_comp.dc_id = (*(global_ptr)&0x0f);
         global_ptr++;
         para.comp_data.push_back(tmp_comp);
@@ -54,30 +54,40 @@ void analysis_para(SOS_Head &para)
     cout << "end is" << *global_ptr + 0;
 }
 
-int ReadSym(Huffman_tree table)
+int ReadSym(const Huffman_tree &table)
 {
     int read_sym = 0;
     bool read_end = false;
     int read_length = 0;
+    int tmp = 0;
+    while ((cur_bit >> tmp) != 0x01)
+    {
+        tmp++; //注意，这里是cur_bit第tmp+1位
+    }
     while (!read_end)
     {
-        read_sym = (read_sym << 1) | ((*global_ptr & cur_bit) >> (7 - (read_length % 8)));                                                  //read_length%4方便两个字节进行移位到末尾
+        read_sym = (read_sym << 1) | ((*global_ptr & cur_bit) >> (7 - (read_length - tmp + 7) % 8));                                        //read_length%4方便两个字节进行移位到末尾
         if (read_sym >= table.length_min[read_length] && read_sym <= table.length_max[read_length] && (table.data[read_length].size() > 0)) //在指定哈夫曼表的区间中,表示找到了此哈夫曼节点size>0为了保证第一个节点的长度
         {
+
             read_end = true; //已找到
         }
         else
         {
             read_length++;
-            if (cur_bit == 0x01) //第一个字节检测结束
+        }
+        if (cur_bit == 0x01) //第一个字节检测结束
+        {
+            cur_bit = 0x80; //检测第二个字节的值
+            global_ptr++;
+            if (*global_ptr == 0x00 && *(global_ptr - 1) == 0xff)
             {
-                cur_bit = 0x80; //检测第二个字节的值
-                global_ptr++;
+                global_ptr++; //0xff00跳过此字节
             }
-            else
-            {
-                cur_bit = cur_bit >> 1;
-            }
+        }
+        else
+        {
+            cur_bit = cur_bit >> 1;
         }
     }
     if (table.effect == false)
@@ -85,15 +95,9 @@ int ReadSym(Huffman_tree table)
         cout << "Not init yet" << endl;
         exit(1);
     }
-    if (read_length > 16)
-    {
-        cout << "find length error";
-        exit(1);
-    }
     cout << read_sym << endl;
     for (auto x = table.data[read_length].begin(); x < table.data[read_length].end(); x++)
     {
-        cout << x->value << " ";
         if (x->value == read_sym)
         {
             return (x->weight);
@@ -119,6 +123,10 @@ int parseHuffman(int s)
         {
             cur_bit = 0x80; //检测第二个字节的值
             global_ptr++;
+            if (*global_ptr == 0x00 && *(global_ptr - 1) == 0xff)
+            {
+                global_ptr++; //0xff00跳过此字节
+            }
         }
         else
         {
@@ -126,6 +134,11 @@ int parseHuffman(int s)
         }
         read_length++;
         s--;
+    }
+    if (read_length > 16)
+    {
+        cout << "find length error";
+        exit(1);
     }
     return read_sym;
 }
@@ -140,19 +153,36 @@ bool Huffmandecode(SOS_Head &para, int comp_num)
     {
         if (start == 0) //DC部分进行解码
         {
+            if (para.comp_data[comp_num].dc_id > 2)
+            {
+                cout << "dc table error" << endl;
+                exit(1);
+            }
             s = ReadSym(Huffman_table[para.comp_data[comp_num].dc_id]); //传入DC_id进行解码
-            cout << "Huffman_DC value is:" << s << endl;
+            cout << "Huffman_DC value is:" << s << " ";
             start++;
             t = parseHuffman(s);
-            cout << "parse the huffman value is:" << t;
+            cout << "parse the DC huffman value is:" << t << endl;
         }
         else
         {
-            cout << "Huffman_AC value" << endl;
-            global_ptr++;
+            if (para.comp_data[comp_num].ac_id > 7)
+            {
+                cout << "ac table error" << endl;
+                exit(1);
+            }
+            cout << "currect global ptr is" << *global_ptr + 0 << endl;
+            s = ReadSym(Huffman_table[para.comp_data[comp_num].ac_id]); //传入AC_id进行解码
+            cout << "Huffman_AC value is:" << s << " ";
+            start += (s >> 4); //高四位作为偏移量
+            start++;
+            s = s & 0x0f;
+            t = parseHuffman(s);
+            cout << "parse the AC Huffman value is " << t << endl;
         }
     }
 }
+
 void analysis_data(SOS_Head &para)
 {
     extern IMGINFO IMG; //检测有几个component
@@ -167,8 +197,7 @@ void analysis_data(SOS_Head &para)
         {
             for (int i = 0; i < para.comp_num; i++) //对每个comp进行decode
             {
-                cur_bit = 0x80;
-                para.Ss = 0; //每个comp解码时，第一个Ss为0
+                cout << "Now the globale ptr is " << *global_ptr + 0 << "OKOK" << endl;
                 Huffmandecode(para, i);
             }
         }

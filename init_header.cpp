@@ -122,7 +122,7 @@ void parse_DHT(unsigned char *global_ptr, int length)
             {
                 for (auto x : Huffman_table[i].data[j])
                 {
-                    cout << "node value is" << x.value << "weight is" << x.weight + 0 << "length is" << j << endl;
+                    cout << "node value is" << x.value << "weight is" << x.weight + 0 << "length is" << j + 1 << endl;
                 }
                 cout << endl;
             }

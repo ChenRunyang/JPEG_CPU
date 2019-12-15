@@ -149,7 +149,7 @@ bool Huffmandecode(SOS_Head &para, int comp_num)
     extern Huffman_tree Huffman_table[8];
     unsigned char start = para.Ss;
     unsigned char end = para.Se;
-    while (start < end)
+    while (start <= end) //此处注意end不是64
     {
         if (start == 0) //DC部分进行解码
         {
@@ -191,13 +191,26 @@ void analysis_data(SOS_Head &para)
     int MCU_rows = divceil(IMG.img_height, IMG.max_hor_sample * 8);                          //检测纵向行数
     int MCU_cols = divceil(IMG.img_width, IMG.max_vet_sample * 8);                           //检测横向列数
     const unsigned short scan_bitmask = para.Ah == 0 ? (0xffff << para.Al) : (1 << para.Al); //看是哪种类型的jpeg
+    unsigned char sample_hor[3];                                                             //最多只能支持三个色彩通道
+    unsigned char sample_vec[3];
+    for (int i = 0; i < IMG.component_num; i++)
+    {
+        sample_hor[i] = IMG.com_info[i].hor_sample;
+        sample_vec[i] = IMG.com_info[i].vet_sample;
+    }
     for (int mcu_y = 0; mcu_y < MCU_rows; mcu_y++)
     {
+        cout << "currect mcu_y is" << mcu_y << endl;
         for (int mcu_x = 0; mcu_x < MCU_cols; mcu_x++)
         {
+            cout << "currect mcu_x is" << mcu_x << endl;
             for (int i = 0; i < para.comp_num; i++) //对每个comp进行decode
             {
                 cout << "Now the globale ptr is " << *global_ptr + 0 << "OKOK" << endl;
+                cout << "Now the DHT num is"
+                     << "DC:" << para.comp_data[i].dc_id << " AC:" << para.comp_data[i].ac_id << endl;
+                //int nblock_y=IMG.com_info[i].vet_sample;
+                //int nblock_x=IMG.com_info[i].hor_sample;
                 Huffmandecode(para, i);
             }
         }

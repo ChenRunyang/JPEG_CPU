@@ -5,6 +5,7 @@
 
 extern unsigned char *global_ptr;
 unsigned char cur_bit = 0x80;
+unsigned char pre_dc_num = 0;
 
 int divceil(unsigned short a, unsigned char b)
 {
@@ -143,7 +144,7 @@ int parseHuffman(int s)
     return read_sym;
 }
 
-bool Huffmandecode(SOS_Head &para, int comp_num)
+bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, unsigned char *imgdata, int MCU_cols, int sample_count)
 {
     int s, r, t; //s和t分别是读入的Huffman编码位数高四位的值和解析出来的Huffman值
     extern Huffman_tree Huffman_table[8];
@@ -162,6 +163,7 @@ bool Huffmandecode(SOS_Head &para, int comp_num)
             cout << "Huffman_DC value is:" << s << " ";
             start++;
             t = parseHuffman(s);
+            imgdata[(mcu_y * MCU_cols + mcu_x) * para.comp_num * sample_count * 64 + comp_num * sample_count * 64 + sam_order * 64] = 1;
             cout << "parse the DC huffman value is:" << t << endl;
         }
         else
@@ -173,6 +175,10 @@ bool Huffmandecode(SOS_Head &para, int comp_num)
             }
             cout << "currect global ptr is" << *global_ptr + 0 << endl;
             s = ReadSym(Huffman_table[para.comp_data[comp_num].ac_id]); //传入AC_id进行解码
+            if (s == 0x00)
+            {
+                break;
+            }
             cout << "Huffman_AC value is:" << s << " ";
             start += (s >> 4); //高四位作为偏移量
             start++;
@@ -188,16 +194,24 @@ void analysis_data(SOS_Head &para)
     extern IMGINFO IMG; //检测有几个component
     bool analysis_end = false;
     bool is_interleaved;
-    int MCU_rows = divceil(IMG.img_height, IMG.max_hor_sample * 8);                          //检测纵向行数
-    int MCU_cols = divceil(IMG.img_width, IMG.max_vet_sample * 8);                           //检测横向列数
+    static int MCU_rows = divceil(IMG.img_height, IMG.max_hor_sample * 8);                   //检测纵向行数
+    static int MCU_cols = divceil(IMG.img_width, IMG.max_vet_sample * 8);                    //检测横向列数
     const unsigned short scan_bitmask = para.Ah == 0 ? (0xffff << para.Al) : (1 << para.Al); //看是哪种类型的jpeg
     unsigned char sample_hor[3];                                                             //最多只能支持三个色彩通道
     unsigned char sample_vec[3];
+    unsigned char sample[3];
+    int sample_count = 0;
     for (int i = 0; i < IMG.component_num; i++)
     {
         sample_hor[i] = IMG.com_info[i].hor_sample;
         sample_vec[i] = IMG.com_info[i].vet_sample;
+        sample[i] = (sample_hor[i] * sample_vec[i]); //注意1*1为隔点采样
     }
+    for (int i = 0; i < IMG.component_num; i++)
+    {
+        sample_count += sample[i];
+    }
+    unsigned char IMGDATA[MCU_cols * MCU_rows * sample_count];
     for (int mcu_y = 0; mcu_y < MCU_rows; mcu_y++)
     {
         cout << "currect mcu_y is" << mcu_y << endl;
@@ -211,7 +225,10 @@ void analysis_data(SOS_Head &para)
                      << "DC:" << para.comp_data[i].dc_id << " AC:" << para.comp_data[i].ac_id << endl;
                 //int nblock_y=IMG.com_info[i].vet_sample;
                 //int nblock_x=IMG.com_info[i].hor_sample;
-                Huffmandecode(para, i);
+                for (int sam_order = 0; sam_order < sample[i]; sam_order++)
+                {
+                    Huffmandecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count);
+                }
             }
         }
     }
@@ -233,6 +250,7 @@ void scan_data()
                 //cout << "find SOS" << endl;
                 analysis_para(scan_para);
                 analysis_data(scan_para);
+                global_ptr++; //最后一个不为字节不为oxff
                 break;
 
             case END:

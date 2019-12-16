@@ -38,7 +38,7 @@ int main(int argc, char **argv)
     }
     fseek(input_file, 0, SEEK_END);
     sz = (int)ftell(input_file);
-    buf = (unsigned char *)malloc(sz);
+    buf = (unsigned char *)malloc(sz * sizeof(unsigned char));
     if (!buf)
     {
         wrong("Not enough mem");

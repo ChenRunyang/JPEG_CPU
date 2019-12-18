@@ -4,12 +4,38 @@
 #endif
 
 extern unsigned char *global_ptr;
+extern int unzigzag_table[64];
 unsigned char cur_bit = 0x80;
-unsigned char pre_dc_num = 0;
+unsigned char pre_dc_num[4] = {0}; //最多有四个comp
 
 int divceil(unsigned short a, unsigned char b)
 {
     return (a + b - 1) / b; //防止无法整除的情况
+}
+
+int huffman_hash(int t, int s) //t为解析出来的哈夫曼编码，s为编码的长度
+{
+    if (s == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        int flag = 1;
+        flag <<= (s - 1);    //检查符号位，若为0，则为负数
+        if ((flag & t) == 0) //为负数
+        {
+            int tmp = ~0; //-1为所有位为1
+            tmp <<= s;
+            tmp = tmp | t;
+            t = tmp + 1;
+        }
+        else //为正数，什么都不用做
+        {
+            ;
+        }
+        return t;
+    }
 }
 
 void init_para(SOS_Head &para)
@@ -144,12 +170,18 @@ int parseHuffman(int s)
     return read_sym;
 }
 
-bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, unsigned char *imgdata, int MCU_cols, int sample_count)
+bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, int *imgdata, int MCU_cols, int sample_count, unsigned char *sample)
 {
-    int s, r, t; //s和t分别是读入的Huffman编码位数高四位的值和解析出来的Huffman值
+    int s, r, t, m; //s和t分别是读入的Huffman编码位数高四位的值和解析出来的Huffman值
     extern Huffman_tree Huffman_table[8];
     unsigned char start = para.Ss;
     unsigned char end = para.Se;
+    int cal_sample = 0;
+    for (int cal_tmp = 0; cal_tmp < comp_num; cal_tmp++) //计算在当前comp的前sam值
+    {
+        cal_sample += sample[cal_tmp];
+    }
+    int offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
     while (start <= end) //此处注意end不是64
     {
         if (start == 0) //DC部分进行解码
@@ -163,8 +195,10 @@ bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_o
             cout << "Huffman_DC value is:" << s << " ";
             start++;
             t = parseHuffman(s);
-            imgdata[(mcu_y * MCU_cols + mcu_x) * para.comp_num * sample_count * 64 + comp_num * sample_count * 64 + sam_order * 64] = 1;
-            cout << "parse the DC huffman value is:" << t << endl;
+            m = huffman_hash(t, s);
+            imgdata[offset] = m + pre_dc_num[comp_num];
+            pre_dc_num[comp_num] = m; //差分编码记录为前一个DC值
+            cout << "parse the DC huffman value is:" << m << endl;
         }
         else
         {
@@ -180,11 +214,18 @@ bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_o
                 break;
             }
             cout << "Huffman_AC value is:" << s << " ";
-            start += (s >> 4); //高四位作为偏移量
-            start++;
+            r = (s >> 4);
+            for (int tmp = 0; tmp < r; tmp++)
+            {
+                imgdata[offset + unzigzag_table[start + tmp]] = 0; //前面填充r个0
+            }
+            start += r; //高四位作为偏移量
             s = s & 0x0f;
             t = parseHuffman(s);
-            cout << "parse the AC Huffman value is " << t << endl;
+            m = huffman_hash(t, s);
+            imgdata[offset + unzigzag_table[start]] = m;
+            start++;
+            cout << "parse the AC Huffman value is " << m << endl;
         }
     }
 }
@@ -211,7 +252,7 @@ void analysis_data(SOS_Head &para)
     {
         sample_count += sample[i];
     }
-    unsigned char IMGDATA[MCU_cols * MCU_rows * sample_count];
+    int IMGDATA[MCU_cols * MCU_rows * sample_count * 64];
     for (int mcu_y = 0; mcu_y < MCU_rows; mcu_y++)
     {
         cout << "currect mcu_y is" << mcu_y << endl;
@@ -227,10 +268,14 @@ void analysis_data(SOS_Head &para)
                 //int nblock_x=IMG.com_info[i].hor_sample;
                 for (int sam_order = 0; sam_order < sample[i]; sam_order++)
                 {
-                    Huffmandecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count);
+                    Huffmandecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count, sample);
                 }
             }
         }
+    }
+    for (int i = 0; i < 64; i++)
+    {
+        cout << IMGDATA[i] << " ";
     }
 }
 

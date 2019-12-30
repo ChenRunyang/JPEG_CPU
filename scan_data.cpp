@@ -6,7 +6,170 @@
 extern unsigned char *global_ptr;
 extern int unzigzag_table[64];
 unsigned char cur_bit = 0x80;
-unsigned char pre_dc_num[4] = {0}; //最多有四个comp
+int pre_dc_num[4] = {0}; //最多有四个comp
+const int kIDCTMatrix[64] = {
+    8192,
+    11363,
+    10703,
+    9633,
+    8192,
+    6437,
+    4433,
+    2260,
+    8192,
+    9633,
+    4433,
+    -2259,
+    -8192,
+    -11362,
+    -10704,
+    -6436,
+    8192,
+    6437,
+    -4433,
+    -11362,
+    -8192,
+    2261,
+    10704,
+    9633,
+    8192,
+    2260,
+    -10703,
+    -6436,
+    8192,
+    9633,
+    -4433,
+    -11363,
+    8192,
+    -2260,
+    -10703,
+    6436,
+    8192,
+    -9633,
+    -4433,
+    11363,
+    8192,
+    -6437,
+    -4433,
+    11362,
+    -8192,
+    -2261,
+    10704,
+    -9633,
+    8192,
+    -9633,
+    4433,
+    2259,
+    -8192,
+    11362,
+    -10704,
+    6436,
+    8192,
+    -11363,
+    10703,
+    -9633,
+    8192,
+    -6437,
+    4433,
+    -2260,
+};
+
+void ComputeDCT(const int *in, const int stride, int *out)
+{
+    int tmp0, tmp1, tmp2, tmp3, tmp4;
+
+    tmp1 = kIDCTMatrix[0] * in[0];
+    out[0] = out[1] = out[2] = out[3] = out[4] = out[5] = out[6] = out[7] = tmp1;
+
+    tmp0 = in[stride];
+    tmp1 = kIDCTMatrix[1] * tmp0;
+    tmp2 = kIDCTMatrix[9] * tmp0;
+    tmp3 = kIDCTMatrix[17] * tmp0;
+    tmp4 = kIDCTMatrix[25] * tmp0;
+    out[0] += tmp1;
+    out[1] += tmp2;
+    out[2] += tmp3;
+    out[3] += tmp4;
+    out[4] -= tmp4;
+    out[5] -= tmp3;
+    out[6] -= tmp2;
+    out[7] -= tmp1;
+
+    tmp0 = in[2 * stride];
+    tmp1 = kIDCTMatrix[2] * tmp0;
+    tmp2 = kIDCTMatrix[10] * tmp0;
+    out[0] += tmp1;
+    out[1] += tmp2;
+    out[2] -= tmp2;
+    out[3] -= tmp1;
+    out[4] -= tmp1;
+    out[5] -= tmp2;
+    out[6] += tmp2;
+    out[7] += tmp1;
+
+    tmp0 = in[3 * stride];
+    tmp1 = kIDCTMatrix[3] * tmp0;
+    tmp2 = kIDCTMatrix[11] * tmp0;
+    tmp3 = kIDCTMatrix[19] * tmp0;
+    tmp4 = kIDCTMatrix[27] * tmp0;
+    out[0] += tmp1;
+    out[1] += tmp2;
+    out[2] += tmp3;
+    out[3] += tmp4;
+    out[4] -= tmp4;
+    out[5] -= tmp3;
+    out[6] -= tmp2;
+    out[7] -= tmp1;
+
+    tmp0 = in[4 * stride];
+    tmp1 = kIDCTMatrix[4] * tmp0;
+    out[0] += tmp1;
+    out[1] -= tmp1;
+    out[2] -= tmp1;
+    out[3] += tmp1;
+    out[4] += tmp1;
+    out[5] -= tmp1;
+
+    tmp0 = in[5 * stride];
+    tmp1 = kIDCTMatrix[5] * tmp0;
+    tmp2 = kIDCTMatrix[13] * tmp0;
+    tmp3 = kIDCTMatrix[21] * tmp0;
+    tmp4 = kIDCTMatrix[29] * tmp0;
+    out[0] += tmp1;
+    out[1] += tmp2;
+    out[2] += tmp3;
+    out[3] += tmp4;
+    out[4] -= tmp4;
+    out[5] -= tmp3;
+    out[6] -= tmp2;
+    out[7] -= tmp1;
+
+    tmp0 = in[6 * stride];
+    tmp1 = kIDCTMatrix[6] * tmp0;
+    tmp2 = kIDCTMatrix[14] * tmp0;
+    out[0] += tmp1;
+    out[1] += tmp2;
+    out[2] -= tmp2;
+    out[3] -= tmp1;
+    out[4] -= tmp1;
+    out[5] -= tmp2;
+    out[6] += tmp2;
+    out[7] += tmp1;
+
+    tmp0 = in[7 * stride];
+    tmp1 = kIDCTMatrix[7] * tmp0;
+    tmp2 = kIDCTMatrix[15] * tmp0;
+    tmp3 = kIDCTMatrix[23] * tmp0;
+    tmp4 = kIDCTMatrix[31] * tmp0;
+    out[0] += tmp1;
+    out[1] += tmp2;
+    out[2] += tmp3;
+    out[3] += tmp4;
+    out[4] -= tmp4;
+    out[5] -= tmp3;
+    out[6] -= tmp2;
+    out[7] -= tmp1;
+}
 
 int divceil(unsigned short a, unsigned char b)
 {
@@ -172,7 +335,7 @@ int parseHuffman(int s)
 
 bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, int *imgdata, int MCU_cols, int sample_count, unsigned char *sample)
 {
-    int s, r, t, m; //s和t分别是读入的Huffman编码位数高四位的值和解析出来的Huffman值
+    int s, r, t, m, tmp; //s和t分别是读入的Huffman编码位数高四位的值和解析出来的Huffman值
     extern Huffman_tree Huffman_table[8];
     unsigned char start = para.Ss;
     unsigned char end = para.Se;
@@ -211,11 +374,15 @@ bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_o
             s = ReadSym(Huffman_table[para.comp_data[comp_num].ac_id]); //传入AC_id进行解码
             if (s == 0x00)
             {
+                for (tmp = start; tmp < 64; tmp++)
+                {
+                    imgdata[offset + unzigzag_table[tmp]] = 0; //前面填充r个0
+                }
                 break;
             }
             cout << "Huffman_AC value is:" << s << " ";
             r = (s >> 4);
-            for (int tmp = 0; tmp < r; tmp++)
+            for (tmp = 0; tmp < r; tmp++)
             {
                 imgdata[offset + unzigzag_table[start + tmp]] = 0; //前面填充r个0
             }
@@ -226,6 +393,41 @@ bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_o
             imgdata[offset + unzigzag_table[start]] = m;
             start++;
             cout << "parse the AC Huffman value is " << m << endl;
+        }
+    }
+    return false;
+}
+
+bool Idctdecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, int *imgdata, int MCU_cols, int sample_count, unsigned char *sample)
+{
+    int cal_sample = 0;
+    for (int cal_tmp = 0; cal_tmp < comp_num; cal_tmp++) //计算在当前comp的前sam值
+    {
+        cal_sample += sample[cal_tmp];
+    }
+    int offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
+    int colidcts[64];
+    const int kColScale = 11;
+    const int kColRound = 1 << (kColScale - 1);
+    for (int i = 0; i < 8; ++i)
+    {
+        int colbuf[8] = {0};
+        ComputeDCT(&imgdata[offset + i], 8, colbuf);
+        for (int j = 0; j < 8; ++j)
+        {
+            colidcts[8 * j + i] = (colbuf[j] + kColRound) >> kColScale;
+        }
+    }
+    const int kRowScale = 18;
+    const int kRowRound = 257 << (kRowScale - 1);
+    for (int i = 0; i < 8; ++i)
+    {
+        const int rowidx = 8 * i;
+        int rowbuf[8] = {0};
+        ComputeDCT(&colidcts[rowidx], 1, rowbuf);
+        for (int x = 0; x < 8; ++x)
+        {
+            imgdata[offset + rowidx + x] = max(0, min(255, (rowbuf[x] + kRowRound) >> kRowScale));
         }
     }
 }
@@ -269,6 +471,7 @@ void analysis_data(SOS_Head &para)
                 for (int sam_order = 0; sam_order < sample[i]; sam_order++)
                 {
                     Huffmandecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count, sample);
+                    //Idctdecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count, sample);
                 }
             }
         }

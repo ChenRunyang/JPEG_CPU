@@ -7,6 +7,7 @@ extern unsigned char *global_ptr;
 extern int unzigzag_table[64];
 unsigned char cur_bit = 0x80;
 int pre_dc_num[4] = {0}; //最多有四个comp
+extern DQTable DQ_TABLE[4];
 const int kIDCTMatrix[64] = {
     8192,
     11363,
@@ -333,18 +334,12 @@ int parseHuffman(int s)
     return read_sym;
 }
 
-bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, int *imgdata, int MCU_cols, int sample_count, unsigned char *sample)
+bool Huffmandecode(SOS_Head &para, int comp_num, int *imgdata, int offset)
 {
     int s, r, t, m, tmp; //s和t分别是读入的Huffman编码位数高四位的值和解析出来的Huffman值
     extern Huffman_tree Huffman_table[8];
     unsigned char start = para.Ss;
     unsigned char end = para.Se;
-    int cal_sample = 0;
-    for (int cal_tmp = 0; cal_tmp < comp_num; cal_tmp++) //计算在当前comp的前sam值
-    {
-        cal_sample += sample[cal_tmp];
-    }
-    int offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
     while (start <= end) //此处注意end不是64
     {
         if (start == 0) //DC部分进行解码
@@ -398,14 +393,8 @@ bool Huffmandecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_o
     return false;
 }
 
-bool Idctdecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_order, int *imgdata, int MCU_cols, int sample_count, unsigned char *sample)
+bool Idctdecode(unsigned char *out, int *imgdata, int offset)
 {
-    int cal_sample = 0;
-    for (int cal_tmp = 0; cal_tmp < comp_num; cal_tmp++) //计算在当前comp的前sam值
-    {
-        cal_sample += sample[cal_tmp];
-    }
-    int offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
     int colidcts[64];
     const int kColScale = 11;
     const int kColRound = 1 << (kColScale - 1);
@@ -427,23 +416,118 @@ bool Idctdecode(SOS_Head &para, int comp_num, int mcu_x, int mcu_y, int sam_orde
         ComputeDCT(&colidcts[rowidx], 1, rowbuf);
         for (int x = 0; x < 8; ++x)
         {
-            imgdata[offset + rowidx + x] = max(0, min(255, (rowbuf[x] + kRowRound) >> kRowScale));
+            out[offset + rowidx + x] = max(0, min(255, (rowbuf[x] + kRowRound) >> kRowScale));
         }
     }
 }
 
-void analysis_data(SOS_Head &para)
+bool Idqtdecode(unsigned char dqt_num, int *imgdata, int offset)
+{
+    if (dqt_num > 3)
+    {
+        cout << "dqt_num error" << endl;
+        return false;
+    }
+    for (int i = 0; i < 64; i++)
+    {
+        //cout << "DQ:" << DQ_TABLE[dqt_num].data[i] + 0;
+        imgdata[offset + i] = imgdata[offset + i] * DQ_TABLE[dqt_num].data[i];
+    }
+}
+
+//用于测试程序正确性
+bool Idctdecode2(unsigned char *out, int *imgdata, int offset)
+{
+    double tmp[64];
+    double coff[64];
+    double block[64];
+    double det[64];
+
+    for (int i = 0; i < 64; i++)
+    {
+        block[i] = (double)(*(imgdata + offset + i));
+        det[i] = 0;
+    }
+
+    /*
+    coff[0] = 1.0 / sqrt((double)8);
+    for (int m = 1; m < 8; m++)
+    {
+        coff[m] = sqrt((double)2) / sqrt((double)8);
+    }
+
+    for (int k = 0; k < 8; k++)
+    {
+        for (int n = 0; n < 8; n++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                tmp[k * 8 + n] += coff[x] * block[k * 8 + x] * cos((2 * n + 1) * x * PI / 2 / 8);
+            }
+        }
+    }
+
+    for (int m = 0; m < 8; m++)
+    {
+        for (int n = 0; n < 8; n++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                *(imgdata + offset + m * 8 + n) += (int)(coff[x] * tmp[x * 8 + n] * cos((2 * m + 1) * x * PI / 2 / 8));
+            }
+        }
+    }
+    实现方法失败*/
+    double cu, cv;
+    for (int x = 0; x < 8; x++)
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            for (int u = 0; u < 8; u++)
+            {
+                for (int v = 0; v < 8; v++)
+                {
+                    if (u == 0)
+                    {
+                        cu = 1 / sqrt(2);
+                    }
+                    else
+                    {
+                        cu = 1;
+                    }
+                    if (v == 0)
+                    {
+                        cv = 1 / sqrt(2);
+                    }
+                    else
+                    {
+                        cv = 1;
+                    }
+                    det[x * 8 + y] += 0.25 * cu * cv * (block[u * 8 + v] * cos((2 * x + 1) * u * PI / 16) * cos((2 * y + 1) * v * PI / 16));
+                }
+            }
+        }
+    }
+    for (int i = 0; i < 64; i++)
+    {
+        *(imgdata + offset + i) = ((int)det[i] + 127);
+        out[offset + i] = max(0, min(255, *(imgdata + offset + i)));
+    }
+}
+int analysis_data(SOS_Head &para)
 {
     extern IMGINFO IMG; //检测有几个component
+    extern unsigned char *output;
     bool analysis_end = false;
     bool is_interleaved;
-    static int MCU_rows = divceil(IMG.img_height, IMG.max_hor_sample * 8);                   //检测纵向行数
-    static int MCU_cols = divceil(IMG.img_width, IMG.max_vet_sample * 8);                    //检测横向列数
+    int MCU_rows = divceil(IMG.img_height, IMG.max_hor_sample * 8);                          //检测纵向行数
+    int MCU_cols = divceil(IMG.img_width, IMG.max_vet_sample * 8);                           //检测横向列数
     const unsigned short scan_bitmask = para.Ah == 0 ? (0xffff << para.Al) : (1 << para.Al); //看是哪种类型的jpeg
     unsigned char sample_hor[3];                                                             //最多只能支持三个色彩通道
     unsigned char sample_vec[3];
     unsigned char sample[3];
     int sample_count = 0;
+    int offset = 0;
     for (int i = 0; i < IMG.component_num; i++)
     {
         sample_hor[i] = IMG.com_info[i].hor_sample;
@@ -454,7 +538,9 @@ void analysis_data(SOS_Head &para)
     {
         sample_count += sample[i];
     }
-    int IMGDATA[MCU_cols * MCU_rows * sample_count * 64];
+    int buffer_size = MCU_cols * MCU_rows * sample_count * 64;
+    int IMGDATA[buffer_size];
+    output = (unsigned char *)malloc(buffer_size * sizeof(unsigned char));
     for (int mcu_y = 0; mcu_y < MCU_rows; mcu_y++)
     {
         cout << "currect mcu_y is" << mcu_y << endl;
@@ -470,8 +556,16 @@ void analysis_data(SOS_Head &para)
                 //int nblock_x=IMG.com_info[i].hor_sample;
                 for (int sam_order = 0; sam_order < sample[i]; sam_order++)
                 {
-                    Huffmandecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count, sample);
-                    //Idctdecode(para, i, mcu_x, mcu_y, sam_order, IMGDATA, MCU_cols, sample_count, sample);
+                    int cal_sample = 0;
+                    for (int cal_tmp = 0; cal_tmp < i; cal_tmp++) //计算在当前comp的前sam值
+                    {
+                        cal_sample += sample[cal_tmp];
+                    }
+                    offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
+                    Huffmandecode(para, i, IMGDATA, offset);
+                    Idqtdecode(IMG.com_info[i].DQT_num, IMGDATA, offset);
+                    //Idctdecode(output, IMGDATA, offset);
+                    Idctdecode2(output, IMGDATA, offset);
                 }
             }
         }
@@ -480,12 +574,14 @@ void analysis_data(SOS_Head &para)
     {
         cout << IMGDATA[i] << " ";
     }
+    return buffer_size;
 }
 
-void scan_data()
+int scan_data()
 {
     bool scan_end = false;
     SOS_Head scan_para;
+    int buffer_size;
     while (!scan_end)
     {
         if (*(global_ptr) == MA)
@@ -497,7 +593,7 @@ void scan_data()
                 global_ptr += 2;
                 //cout << "find SOS" << endl;
                 analysis_para(scan_para);
-                analysis_data(scan_para);
+                buffer_size = analysis_data(scan_para);
                 global_ptr++; //最后一个不为字节不为oxff
                 break;
 
@@ -511,4 +607,5 @@ void scan_data()
             }
         }
     }
+    return buffer_size;
 }

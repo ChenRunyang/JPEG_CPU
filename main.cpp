@@ -7,6 +7,7 @@ unsigned char *global_ptr;
 DQTable DQ_TABLE[4]; //最多储存四张DQT表
 IMGINFO IMG;
 IDE_INFO IDE;
+unsigned char *output;
 
 int zigzag_table[64] =
     {
@@ -30,12 +31,11 @@ int unzigzag_table[64] =
         58, 59, 52, 45, 38, 31, 39, 46,
         53, 60, 61, 54, 47, 55, 62, 63};
 
-
 Huffman_tree Huffman_table[8];
 
 int main(int argc, char **argv)
 {
-    int sz;
+    int sz, size;
     unsigned char *buf;
 
     if (argc <= 1)
@@ -61,5 +61,9 @@ int main(int argc, char **argv)
 
     global_ptr = (unsigned char *)(buf);
     init_header();
-    scan_data();
+    size = scan_data();
+    FILE *fp;
+    fp = fopen("file", "w+");
+    fwrite(output, sizeof(unsigned char) * size, 1, fp);
+    fclose(fp);
 }

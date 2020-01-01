@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <OpenCL/cl.h>
+#include <math.h>
 #include <vector>
 
 #define SOS 0xda
@@ -14,6 +15,8 @@
 #define APE 0xee
 #define SOF0 0xc0
 #define END 0xd9
+
+#define PI (3.1415926)
 
 typedef struct identify //没什么用
 {
@@ -36,7 +39,7 @@ typedef struct component_info
     char num;
     unsigned char hor_sample : 4;
     unsigned char vet_sample : 4;
-    char DQT_num;
+    unsigned char DQT_num;
 } COM;
 
 typedef struct image
@@ -95,6 +98,6 @@ typedef struct huffmannode
 
 extern void init_header();
 extern void wrong(const char *name);
-extern void scan_data();
+extern int scan_data();
 
 using namespace std;

@@ -7,7 +7,7 @@ void parse_DQT(unsigned char *global_ptr, int seg_length)
 {
     extern DQTable DQ_TABLE[4];
     int table_num;
-    for (int i = 0; i < (seg_length / 65); i++)
+    for (int i = 0; i < (seg_length / 65); i++) //共有i个DQT表,初版只支持8位精度，precision是精度描述
     {
         if (((*(global_ptr + 65 * i)) & 0x0f) > 4)
         {
@@ -22,6 +22,10 @@ void parse_DQT(unsigned char *global_ptr, int seg_length)
         table_num = *(global_ptr + 65 * i) & 0x0f;
         DQ_TABLE[table_num].precision = (*(global_ptr + 65 * i)) & 0xf0;
         DQ_TABLE[table_num].imfo = (*(global_ptr + 65 * i)) & 0x0f;
+        for (int j = 0; j < 64; j++)
+        {
+            DQ_TABLE[table_num].data[j] = (*(global_ptr + 65 * i + 1 + j));
+        }
     }
 }
 

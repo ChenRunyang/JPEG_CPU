@@ -528,6 +528,7 @@ int analysis_data(SOS_Head &para)
     unsigned char sample[3];
     int sample_count = 0;
     int offset = 0;
+    int sam_order;
     for (int i = 0; i < IMG.component_num; i++)
     {
         sample_hor[i] = IMG.com_info[i].hor_sample;
@@ -552,25 +553,29 @@ int analysis_data(SOS_Head &para)
                 cout << "Now the globale ptr is " << *global_ptr + 0 << "OKOK" << endl;
                 cout << "Now the DHT num is"
                      << "DC:" << para.comp_data[i].dc_id << " AC:" << para.comp_data[i].ac_id << endl;
-                //int nblock_y=IMG.com_info[i].vet_sample;
-                //int nblock_x=IMG.com_info[i].hor_sample;
-                for (int sam_order = 0; sam_order < sample[i]; sam_order++)
+                int nblock_y = IMG.com_info[i].vet_sample;
+                int nblock_x = IMG.com_info[i].hor_sample;
+                for (int samv = 0; samv < nblock_y; ++samv)
                 {
-                    int cal_sample = 0;
-                    for (int cal_tmp = 0; cal_tmp < i; cal_tmp++) //计算在当前comp的前sam值
+                    for (int samh = 0; samh < nblock_x; samh++)
                     {
-                        cal_sample += sample[cal_tmp];
+                        sam_order = nblock_x * samv + samh;
+                        int cal_sample = 0;
+                        for (int cal_tmp = 0; cal_tmp < i; cal_tmp++) //计算在当前comp的前sam值
+                        {
+                            cal_sample += sample[cal_tmp];
+                        }
+                        offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
+                        Huffmandecode(para, i, IMGDATA, offset);
+                        Idqtdecode(IMG.com_info[i].DQT_num, IMGDATA, offset);
+                        Idctdecode(output, IMGDATA, offset);
+                        Idctdecode2(output, IMGDATA, offset);
                     }
-                    offset = (mcu_y * MCU_cols + mcu_x) * sample_count * 64 + cal_sample * 64 + sam_order * 64;
-                    Huffmandecode(para, i, IMGDATA, offset);
-                    Idqtdecode(IMG.com_info[i].DQT_num, IMGDATA, offset);
-                    //Idctdecode(output, IMGDATA, offset);
-                    Idctdecode2(output, IMGDATA, offset);
                 }
             }
         }
     }
-    for (int i = 0; i < 64; i++)
+    for (int i = 0; i < 128; i++)
     {
         cout << IMGDATA[i] << " ";
     }

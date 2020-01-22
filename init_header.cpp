@@ -161,6 +161,13 @@ void parse_AP(unsigned char *global_ptr, int length)
     //cout << IDE.hor_reso + 0 << IDE.ver_reso + 0 << IDE.hor_pit + 0 << IDE.ver_pit + 0;
 }
 
+void parse_DRI(unsigned char *global_ptr, int length)
+{
+    extern IMG_DRI DRI_DATA;
+    DRI_DATA.ri = (*(global_ptr) << 8) + *(global_ptr + 1);
+    global_ptr += 2;
+}
+
 void init_header()
 {
     extern unsigned char *global_ptr;
@@ -212,6 +219,12 @@ void init_header()
             case SOS:
                 //cout << "end" << endl;
                 scan_end = true;
+                break;
+            case DRI:
+                global_ptr += 2;
+                seg_length = (*(global_ptr) << 8) + *(global_ptr + 1);
+                global_ptr += 2;
+                parse_DRI(global_ptr, seg_length);
                 break;
             default:
                 global_ptr++;

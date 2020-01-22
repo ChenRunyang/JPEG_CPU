@@ -8,6 +8,7 @@ DQTable DQ_TABLE[4]; //最多储存四张DQT表
 IMGINFO IMG;
 IDE_INFO IDE;
 unsigned char *output;
+IMG_DRI DRI_DATA;
 
 int zigzag_table[64] =
     {

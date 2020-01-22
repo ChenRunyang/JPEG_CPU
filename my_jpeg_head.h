@@ -14,6 +14,7 @@
 #define APC 0xec
 #define APE 0xee
 #define SOF0 0xc0
+#define DRI 0xdd
 #define END 0xd9
 
 #define PI (3.1415926)
@@ -95,6 +96,11 @@ typedef struct huffmannode
     unsigned int value;
     unsigned int distance;
 } Huffmandata;
+
+typedef struct dri
+{
+    unsigned int ri;
+} IMG_DRI;
 
 extern void init_header();
 extern void wrong(const char *name);

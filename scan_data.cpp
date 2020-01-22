@@ -275,6 +275,15 @@ int ReadSym(const Huffman_tree &table)
             {
                 global_ptr++; //0xff00跳过此字节
             }
+            else if ((*global_ptr == 0xff && (*(global_ptr + 1) & 0xf0) == 0xd0) || (*(global_ptr + 1) == 0xff && (*(global_ptr + 2) & 0xf0) == 0xd0))
+            {
+                read_sym = 0;
+                for (int i = 0; i < 4; i++)
+                {
+                    pre_dc_num[i] = 0;
+                }
+                global_ptr += 2;
+            }
         }
         else
         {
